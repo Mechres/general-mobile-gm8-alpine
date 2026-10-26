@@ -1,0 +1,9 @@
+service gm8dropbear /vendor/bin/gm8/dropbear -r /vendor/etc/gm8/ssh_host_ed25519_key -p 2222
+    class late_start
+    user shell
+    group shell inet net_bw_stats
+    seclabel u:r:shell:s0
+    oneshot
+
+on property:sys.boot_completed=1
+    start gm8dropbear

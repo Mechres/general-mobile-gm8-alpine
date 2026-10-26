@@ -1,0 +1,2 @@
+/dev/mmcblk0p1  /firmware  vfat  ro,nosuid,nodev,noexec  0 0
+/dev/mmcblk0p29 /persist   ext4  rw,nosuid,nodev         0 0

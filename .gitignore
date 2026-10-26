@@ -1,0 +1,42 @@
+# Firmware, ROMs, disk images and other large binary artifacts
+*.img
+*.img.*
+*.tar
+*.tar.*
+*.zip
+*.apk
+*.mbn
+*.ko
+*.bin
+*.md5
+*.pit
+*.mdt
+*.b0[0-9]
+*.b1[0-9]
+
+# Stock ROM / QFIL packages, generated payloads, vendored trees
+GM8_Dual_Edl*/
+pmos/images/
+pmos/gm8_reboot_edl
+pmos/gm8_static_init
+pmos/gm8_static_wrapper
+pmos/gm8_wcnss_trigger
+vendor_payload/bin/
+pmos/kernel/
+edge/
+twrp-tree/
+
+# Generated files and local caches
+__pycache__/
+*.py[cod]
+*.tmp
+*.bak
+*~
+
+# Private credentials and host keys (generate your own, see README)
+*_key
+*_key.pem
+id_rsa
+id_ed25519
+**/authorized_keys
+.env*

@@ -1,0 +1,20 @@
+#!/sbin/openrc-run
+
+description="Keep the GM8 clock new enough for TLS before network time is available"
+
+depend() {
+	before networking
+}
+
+start() {
+	local now floor floor_date
+
+	ebegin "Checking GM8 system clock"
+	now="$(date -u +%s)"
+	floor="$(date -u -r /etc/gm8-build-time +%s)"
+	if [ "$now" -lt "$floor" ]; then
+		floor_date="$(date -u -r /etc/gm8-build-time '+%Y-%m-%d %H:%M:%S')"
+		date -u -s "$floor_date" >/dev/null
+	fi
+	eend $?
+}

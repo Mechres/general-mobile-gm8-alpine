@@ -1,0 +1,44 @@
+#!/sbin/openrc-run
+
+description="GM8 Qualcomm Pronto Wi-Fi hardware"
+pidfile="/run/gm8-wcnss-trigger.pid"
+
+depend() {
+	need localmount
+	before networking
+}
+
+start() {
+	ebegin "Starting GM8 WCNSS firmware"
+	echo -n /firmware/image > /sys/module/firmware_class/parameters/path
+	start-stop-daemon --start --background --make-pidfile \
+		--pidfile "$pidfile" --exec /usr/sbin/gm8-wcnss-trigger
+
+	state=""
+	for _ in 1 2 3 4 5 6 7 8 9 10; do
+		state="$(cat /sys/devices/soc/a21b000.qcom,pronto/subsys2/state 2>/dev/null)"
+		[ "$state" = "ONLINE" ] && break
+		sleep 1
+	done
+	if [ "$state" != "ONLINE" ]; then
+		eend 1 "WCNSS did not reach ONLINE state"
+		return 1
+	fi
+
+	if ! grep -q '^wlan ' /proc/modules; then
+		insmod /lib/modules/3.18.120-perf-g5794ae0/extra/pronto_wlan.ko || {
+			eend 1 "pronto_wlan.ko failed to load"
+			return 1
+		}
+	fi
+	ip link set wlan0 up
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping GM8 Wi-Fi hardware"
+	ip link set wlan0 down 2>/dev/null || true
+	rmmod wlan 2>/dev/null || true
+	start-stop-daemon --stop --pidfile "$pidfile" --retry TERM/5/KILL/2
+	eend $?
+}

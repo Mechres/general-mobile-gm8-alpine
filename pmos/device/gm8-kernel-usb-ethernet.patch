@@ -1,0 +1,25 @@
+diff --git a/arch/arm64/configs/msm8937-perf_defconfig b/arch/arm64/configs/msm8937-perf_defconfig
+index 74d1cf95..c8c9b6d6 100644
+--- a/arch/arm64/configs/msm8937-perf_defconfig
++++ b/arch/arm64/configs/msm8937-perf_defconfig
+@@ -284,6 +284,7 @@ CONFIG_PPPOPNS=y
+ CONFIG_PPP_ASYNC=y
+ CONFIG_PPP_SYNC_TTY=y
+ CONFIG_USB_USBNET=y
++CONFIG_USB_NET_SR9700=y
+ CONFIG_USB_NET_SMSC75XX=y
+ CONFIG_WCNSS_CORE=y
+ CONFIG_WCNSS_CORE_PRONTO=y
+diff --git a/arch/arm64/mm/proc.S b/arch/arm64/mm/proc.S
+index b6245c71..882a818a 100644
+--- a/arch/arm64/mm/proc.S
++++ b/arch/arm64/mm/proc.S
+@@ -140,7 +140,7 @@ ENTRY(cpu_do_switch_mm)
+ 	b	post_ttbr_update_workaround	// Back to C code...
+ ENDPROC(cpu_do_switch_mm)
+ 
+-	.section ".text.init", #alloc, #execinstr
++	.section ".text.init", "ax"
+ 
+ /*
+  *	__cpu_setup
