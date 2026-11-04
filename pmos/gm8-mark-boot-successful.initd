@@ -1,0 +1,49 @@
+#!/sbin/openrc-run
+
+description="Mark the booted A/B slot successful so LK stops consuming its retries"
+
+# LK decrements a slot's GPT retry count on every boot whose "successful"
+# attribute (bit 54) is clear, then marks it unbootable at zero.  Android's
+# boot_control HAL normally sets the bit; Alpine has to do it itself, or the
+# board falls back to fastboot after about seven boots.
+
+depend() {
+	need localmount
+	after networking wpa_supplicant
+}
+
+start() {
+	local disk=/dev/mmcblk0 slot part num attrs
+
+	ebegin "Marking GM8 boot slot successful"
+	slot="$(sed -n 's/.*androidboot\.slot_suffix=\(_[ab]\).*/\1/p' /proc/cmdline)"
+	if [ -z "$slot" ]; then
+		eend 1 "androidboot.slot_suffix missing from cmdline"
+		return 1
+	fi
+	for part in /sys/class/block/mmcblk0p*; do
+		if grep -qx "PARTNAME=boot$slot" "$part/uevent"; then
+			num="$(cat "$part/partition")"
+			break
+		fi
+	done
+	if [ -z "$num" ]; then
+		eend 1 "boot$slot partition not found"
+		return 1
+	fi
+	attrs="$(sgdisk -i "$num" "$disk" | sed -n 's/^Attribute flags: //p')"
+	if [ -z "$attrs" ]; then
+		eend 1 "cannot read boot$slot attributes"
+		return 1
+	fi
+	if [ $(( (0x$attrs >> 54) & 1 )) -eq 1 ]; then
+		eend 0
+		return 0
+	fi
+	# The kernel keeps its partition view while root is mounted; sgdisk's
+	# re-read warning is expected and harmless since only attributes change.
+	sgdisk -A "$num:set:54" "$disk" >/dev/null 2>&1
+	attrs="$(sgdisk -i "$num" "$disk" | sed -n 's/^Attribute flags: //p')"
+	[ $(( (0x$attrs >> 54) & 1 )) -eq 1 ]
+	eend $? "boot$slot successful bit not set"
+}

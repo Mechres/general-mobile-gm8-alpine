@@ -27,7 +27,7 @@ Detailed engineering notes are in [HANDOFF.md](HANDOFF.md); the open-work checkl
 | Feature | State |
 |---|---|
 | Alpine boot | ✅ Alpine 3.19.9 on `system_a`, stock kernel + OpenRC |
-| USB network | ✅ RNDIS `18d1:d002`, device `172.16.42.1/24` |
+| USB network | ✅ RNDIS `18d1:d002`, device `172.16.43.1/24` |
 | SSH | ✅ root key authentication |
 | Root filesystem | ✅ ext4, remounted read-write by OpenRC |
 | Wi-Fi hardware | ✅ WCNSS online, matching Pronto driver, real AP scans |
@@ -159,12 +159,15 @@ confirm USB RNDIS and connect over SSH:
 
 ```sh
 ./setup_gm8_usb_network.sh
-ssh -i gm8_node_key root@172.16.42.1
+ssh -i gm8_node_key root@172.16.43.1
 ```
 
-The helper defaults to `enp15s0f3u1` and restores the host-side
-`172.16.42.2/24` address after a reboot. Pass another interface name as its
-first argument if NetworkManager assigns a different name.
+The helper creates a NetworkManager profile (`gm8-usb`) matched on the
+board's fixed host-side RNDIS MAC `02:67:38:00:00:02`, so the host gets
+`172.16.43.2/24` automatically on any USB port and after every reboot.
+Pass another `address/prefix` as its first argument to change it. The board
+uses its own `172.16.43.0/24` subnet so it can share the host with other
+USB-networked boards that use the postmarketOS default `172.16.42.0/24`.
 
 Acceptance checks on the node:
 
@@ -204,7 +207,7 @@ fastboot boot <img>              # risk-free RAM boot
 
 ```
 HANDOFF.md                  engineering notes: verified facts, recipes, traps
-setup_gm8_usb_network.sh    host side of the RNDIS link (172.16.42.2/24)
+setup_gm8_usb_network.sh    host side of the RNDIS link (172.16.43.2/24, MAC-matched NM profile)
 devinfo_unlock.py           sets the is_unlocked dword in `devinfo`
 boot_splice.py              surgical ramdisk splice into a stock boot image
 replace_boot_kernel.py      swap the kernel inside a stock boot image

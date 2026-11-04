@@ -106,6 +106,10 @@ static const char *setup_android_usb(void)
 	USB_WRITE("idProduct", "D002", "GM8_USB_ID_FAIL_v1\n");
 	/* Some downstream android_usb variants omit the optional string files. */
 	write_text("/sys/class/android_usb/android0/product", "GM8-node");
+	/* Fixed host-side MAC (random by default) so the host can match this
+	 * board's USB link by address, whatever port or interface name it gets. */
+	write_text("/sys/class/android_usb/android0/f_rndis/ethaddr",
+		   "02:67:38:00:00:02");
 	USB_WRITE("functions", "rndis", "GM8_USB_FUNC_FAIL_v1\n");
 	USB_WRITE("enable", "1", "GM8_USB_ENABLE_FAIL_v1\n");
 	return "GM8_USB_ENABLED_v1\n";
@@ -118,7 +122,7 @@ static int configure_usb_network(void)
 	static const char command[] =
 		"for i in rndis0 usb0; do "
 		"/bin/busybox ip link set \"$i\" up 2>/dev/null || continue; "
-		"/bin/busybox ip addr add 172.16.42.1/24 dev \"$i\" 2>/dev/null; "
+		"/bin/busybox ip addr add 172.16.43.1/24 dev \"$i\" 2>/dev/null; "
 		"exit 0; done; exit 1";
 	pid_t pid = fork();
 	int status;

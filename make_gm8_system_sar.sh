@@ -83,18 +83,19 @@ install -m644 "$P/pmos/resolv.conf" "$MNT/etc/resolv.conf"
 install -m755 /usr/bin/qemu-aarch64-static "$QEMU"
 set +e
 chroot "$MNT" /tmp/qemu-aarch64-static /sbin/apk add --no-cache \
-	iw wpa_supplicant wireless-tools
+	iw wpa_supplicant wireless-tools sgdisk
 apk_rc=$?
 set -e
 # This minimal root archive inherits four pre-existing APK database/file audit
 # errors from its pmbootstrap build. Treat that status as informational, but
 # fail the build if requested package payloads are absent.
-for package in iw wpa_supplicant wireless-tools; do
+for package in iw wpa_supplicant wireless-tools sgdisk; do
   chroot "$MNT" /tmp/qemu-aarch64-static /sbin/apk info -e "$package"
 done
 [ -x "$MNT/usr/sbin/iw" ]
 [ -x "$MNT/sbin/wpa_supplicant" ]
 [ -x "$MNT/usr/sbin/iwconfig" ]
+[ -x "$MNT/usr/bin/sgdisk" ]
 [ "$apk_rc" -eq 0 ] || echo "NOTE: apk reported $apk_rc; requested Wi-Fi packages verified installed"
 rm -f "$QEMU"
 
@@ -115,6 +116,14 @@ ln -sf /etc/init.d/wpa_supplicant \
 touch "$MNT/etc/gm8-build-time"
 install -m755 "$P/pmos/gm8-clock-floor.initd" "$MNT/etc/init.d/gm8-clock-floor"
 ln -sf /etc/init.d/gm8-clock-floor "$MNT/etc/runlevels/boot/gm8-clock-floor"
+
+# LK counts down a slot's retries until the OS marks the boot successful
+# (Android's boot_control HAL does this); without it both slots end up
+# unbootable after about seven boots and the board stays in fastboot.
+install -m755 "$P/pmos/gm8-mark-boot-successful.initd" \
+  "$MNT/etc/init.d/gm8-mark-boot-successful"
+ln -sf /etc/init.d/gm8-mark-boot-successful \
+  "$MNT/etc/runlevels/default/gm8-mark-boot-successful"
 
 # sanity: SAR init must exist & be executable
 [ -x "$MNT/init" ] || { echo "MISSING /init!"; exit 1; }

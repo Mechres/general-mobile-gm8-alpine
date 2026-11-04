@@ -12,7 +12,16 @@ The headless Alpine target is now **working on the real GM8**:
 - `system_a` boots Alpine Linux 3.19.9 using the stock 3.18.120 Android kernel.
 - PID 1 is `/sbin/init` (BusyBox init) and OpenRC reaches the default runlevel.
 - Legacy `android_usb` enumerates RNDIS as USB `18d1:d002`.
-- Device interface is `rndis0`, statically addressed `172.16.42.1/24`.
+- Device interface is `rndis0`, statically addressed `172.16.43.1/24`; the
+  host-side RNDIS MAC is pinned to `02:67:38:00:00:02`.
+- Every boot, `gm8-mark-boot-successful` (OpenRC, default runlevel) sets
+  the GPT "successful" attribute (bit 54) on the booted `boot_<slot>` with
+  `sgdisk`.  Without it LK decrements the slot retry count on each boot and,
+  after about seven boots, marks both slots unbootable
+  (`fastboot getvar all`: `current-slot:INVALID`, `slot-unbootable:a/b:Yes`)
+  and the board sits in fastboot.  Recovery from that state is
+  `fastboot set_active a && fastboot reboot`.  This happened on 2026-11-04;
+  the images were fine.
 - Root SSH key authentication works with `gm8_node_key`.
 - Root ext4 is remounted read-write by OpenRC; an actual create/remove test in
   `/root` succeeded.
@@ -41,15 +50,15 @@ The headless Alpine target is now **working on the real GM8**:
 Host connection recipe (current host interface name):
 
 ```sh
-./setup_gm8_usb_network.sh <host-usb-interface>   # sets the host side to 172.16.42.2/24
-ssh -i gm8_node_key root@172.16.42.1
+./setup_gm8_usb_network.sh   # one-time: NM profile gm8-usb, host 172.16.43.2/24
+ssh -i gm8_node_key root@172.16.43.1
 ```
 
 Final image and wrapper hashes:
 
 ```text
 4a9a41261e8f80c1aa7423a52bcfe8c7afb9e312dc3d70c0e568c89bab6007f8  pmos/images/gm8_system_sar.img
-69f3cae2371ea86ae5df0aef16592ad5bf4b01a721cff5f927d3675fc0282927  pmos/gm8_static_wrapper
+95968e80bb18da0665f3609cdec2f86cda3fc3af72d5eba9218f0afbc0820dda  pmos/gm8_static_wrapper   (2026-11-04: 172.16.43.1 + pinned RNDIS MAC; 172.16.42.1 build was 69f3cae2…)
 792b4afe99710bba26137106da97ff0bff03057f89e344fd5a0d83ad10faf052  pmos/pronto_wlan.ko
 ```
 
@@ -258,7 +267,7 @@ The authoritative checklist is now
   system_a=working Alpine-SAR · system_b=stock-9.0-img ·
   vendor_a/b=stock · userdata=old partial alpine ext4 (p52) ·
   devinfo=unlocked · board last verified booted as RNDIS `18d1:d002`, pinging
-  at `172.16.42.1`, with working root SSH, read-write rootfs, WCNSS online,
+  at `172.16.43.1`, with working root SSH, read-write rootfs, WCNSS online,
   automatic Wi-Fi association, DHCP, direct Wi-Fi SSH/internet/NTP, working
   `apk update`, and working `0fe6:9702` Ethernet at 10 Mbps half-duplex.
   Ethernet DHCP routes are preferred over Wi-Fi, which remains the fallback.
