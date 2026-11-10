@@ -1,0 +1,11 @@
+[Unit]
+Description=Reset the GM8's USB device when its RNDIS link stops answering
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/gm8-usb-watchdog
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

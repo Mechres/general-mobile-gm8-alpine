@@ -62,6 +62,9 @@ printf '127.0.0.1\tlocalhost\n172.16.42.1\tgm8\n' > "$R/etc/hosts"
 
 sed -i 's/^#PermitRootLogin.*/PermitRootLogin prohibit-password/' \
   "$R/etc/ssh/sshd_config" 2>/dev/null || true
+# The stock kernel has no virtual terminals: Alpine's tty1-6 gettys exit at
+# once and init respawns them ~6x/s, flooding syslog to minutes of history.
+sed -i 's|^\(tty[1-6]::respawn:/sbin/getty\)|#\1|' "$R/etc/inittab" 2>/dev/null || true
 
 for service in devfs dmesg mdev hwdrivers; do
     [ -e "$R/etc/init.d/$service" ] && \

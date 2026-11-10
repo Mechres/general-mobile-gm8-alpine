@@ -27,7 +27,7 @@ Detailed engineering notes are in [HANDOFF.md](HANDOFF.md); the open-work checkl
 | Feature | State |
 |---|---|
 | Alpine boot | ✅ Alpine 3.19.9 on `system_a`, stock kernel + OpenRC |
-| USB network | ✅ RNDIS `18d1:d002`, device `172.16.43.1/24` |
+| USB network | ⚠️ RNDIS `18d1:d002`, device `172.16.43.1/24`; freezes under bulk receive with eMMC writes, recovered by a host USB reset ([USB_LINK_FREEZE.md](pmos/notes/USB_LINK_FREEZE.md)) |
 | SSH | ✅ root key authentication |
 | Root filesystem | ✅ ext4, remounted read-write by OpenRC |
 | Wi-Fi hardware | ✅ WCNSS online, matching Pronto driver, real AP scans |
@@ -74,6 +74,11 @@ Not done: formalising the Wi-Fi setup in a pmbootstrap device package and the ma
 8. **The "lineage-18.1-final.zip" is actually OmniROM 9 eng** (mislabelled);
    it boots and gives root trivially, but mixing its system with stock
    vendor/firmware caused confusion. Don't mix ROM families.
+9. **The USB link freezes under bulk receive plus eMMC writes.** The phone
+   keeps running and USB stays enumerated, but no traffic passes until the
+   host resets the device. RNDIS and NCM both do it, so the bug sits in the
+   downstream USB controller driver. `gm8-usb-watchdog` automates the reset
+   (see [USB_LINK_FREEZE.md](pmos/notes/USB_LINK_FREEZE.md)).
 
 ## Attempt log (2026-08-23 → 24, condensed)
 1. adb unauthorized (no display) → blocked.
@@ -208,6 +213,7 @@ fastboot boot <img>              # risk-free RAM boot
 ```
 HANDOFF.md                  engineering notes: verified facts, recipes, traps
 setup_gm8_usb_network.sh    host side of the RNDIS link (172.16.43.2/24, MAC-matched NM profile)
+gm8-usb-watchdog.sh/.service  host watchdog: USB-resets the GM8 when its link freezes
 devinfo_unlock.py           sets the is_unlocked dword in `devinfo`
 boot_splice.py              surgical ramdisk splice into a stock boot image
 replace_boot_kernel.py      swap the kernel inside a stock boot image
@@ -215,7 +221,7 @@ apply_*.sh, make_*.sh       vendor/system image builders (stock-Android path and
 vendor_payload/             dropbear service definition for the stock-Android SSH node
 pmos/                       Alpine/postmarketOS port: init wrapper, helpers, kernel patches, notes
 pmos/device/*.patch         device tree and USB Ethernet kernel patches (GPL-2.0)
-pmos/notes/                 PORT_PLAN, DEVICE_FACTS, BUILD_INPUTS, USB_ETHERNET, REMAINING_WORK
+pmos/notes/                 PORT_PLAN, DEVICE_FACTS, BUILD_INPUTS, USB_ETHERNET, USB_LINK_FREEZE, REMAINING_WORK
 ```
 
 Firmware, ROM packages, disk images, vendored kernel trees, TWRP trees and all private keys are excluded by `.gitignore` and must be supplied locally.
